@@ -1,194 +1,234 @@
-# 在线项目协作系统
+# 🧠 协作思维导图系统
 
-基于Vue + Django的实时协作思维导图系统，支持多用户同时编辑，具备完整的权限管理和实时同步功能。
+<div align="center">
 
-## 项目特性
+![Vue.js](https://img.shields.io/badge/Vue.js-3.x-4FC08D?style=for-the-badge&logo=vue.js&logoColor=white)
+![Django](https://img.shields.io/badge/Django-4.2+-092E20?style=for-the-badge&logo=django&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
+![Element Plus](https://img.shields.io/badge/Element_Plus-409EFF?style=for-the-badge&logo=element&logoColor=white)
 
-- 🎯 **实时协作**: 基于WebSocket的实时多人协作编辑
-- 🔐 **权限管理**: 灵活的项目权限控制（只读、编辑、管理员）
-- 🌳 **思维导图**: 集成simple-mind-map，支持丰富的节点编辑功能
-- 📊 **项目管理**: 完整的项目创建、管理和成员邀请功能
-- 🎨 **现代UI**: 基于Element Plus的现代化界面设计
-- 📱 **响应式**: 支持桌面和移动端访问
+一个功能强大的协作思维导图系统，支持多用户实时协作编辑、项目管理和直观的思维导图创建。
 
-## 技术栈
+[在线演示](https://your-demo-link.com) · [报告问题](https://github.com/YOUR_USERNAME/collaborative-mindmap-system/issues) · [功能请求](https://github.com/YOUR_USERNAME/collaborative-mindmap-system/issues)
 
-### 后端
-- **Django 5.2**: Python Web框架
-- **Django REST Framework**: API开发框架
-- **Django Channels**: WebSocket支持
-- **SQLite3**: 数据库（开发环境）
-- **Redis**: 缓存和消息队列
+</div>
 
-### 前端
-- **Vue 3**: 前端框架
-- **TypeScript**: 类型安全
-- **Element Plus**: UI组件库
-- **Pinia**: 状态管理
-- **Vue Router**: 路由管理
-- **Axios**: HTTP客户端
-- **Simple Mind Map**: 思维导图组件
+## ✨ 功能特性
 
-## 项目结构
+### 🎯 核心功能
+- **🔄 实时协作**: WebSocket 支持多用户同时编辑思维导图
+- **📊 项目管理**: 创建、管理和分享思维导图项目
+- **🎨 可视化编辑**: 基于 `simple-mind-map` 的直观编辑器
+- **👥 用户管理**: 完整的用户认证和权限系统
+- **📱 响应式设计**: 支持桌面和移动设备
 
-```
-smmprojects/
-├── backend/                 # Django后端
-│   ├── collaboration_system/   # 项目配置
-│   ├── users/                  # 用户管理
-│   ├── projects/              # 项目管理
-│   ├── mindmaps/              # 思维导图管理
-│   ├── manage.py
-│   └── requirements.txt
-├── frontend/               # Vue前端
-│   ├── src/
-│   │   ├── components/       # 组件
-│   │   ├── views/           # 页面
-│   │   ├── stores/          # Pinia状态管理
-│   │   ├── api/             # API调用
-│   │   └── router/          # 路由配置
-│   ├── package.json
-│   └── vite.config.ts
-└── docs/                   # 文档
+### 🛠 技术特性
+- **全屏编辑体验**: 沉浸式的思维导图编辑界面
+- **属性面板**: 动态显示的节点属性编辑面板
+- **自动保存**: 实时保存编辑内容
+- **导出功能**: 支持多种格式导出
+- **主题系统**: 多种思维导图主题选择
+
+## 🚀 快速开始
+
+### 📋 环境要求
+
+- **后端**: Python 3.8+, Django 4.2+
+- **前端**: Node.js 16+, npm 或 yarn
+- **数据库**: SQLite (开发) / PostgreSQL (生产)
+- **缓存**: Redis (可选，用于 WebSocket)
+
+### 🔧 本地开发
+
+1. **克隆项目**
+```bash
+git clone https://github.com/YOUR_USERNAME/collaborative-mindmap-system.git
+cd collaborative-mindmap-system
 ```
 
-## 数据库设计
-
-### 用户模型 (User)
-- 扩展Django默认用户模型
-- 支持头像、创建时间等额外字段
-
-### 项目模型 (Project)
-- 项目基本信息（名称、描述、创建者）
-- 多对多关系管理项目成员
-
-### 项目成员模型 (ProjectMember)
-- 用户与项目的关联关系
-- 权限级别：只读(read)、编辑(edit)、管理员(admin)
-
-### 思维导图节点模型 (MindMapNode)
-- 节点内容（文本、图片、链接、备注）
-- 样式信息（颜色、字体等）
-- 层级关系（父子节点）
-- 创建者和时间戳
-
-### 节点编辑日志 (NodeEditLog)
-- 记录所有节点的变更历史
-- 支持操作回溯和审计
-
-## 权限设计
-
-### 项目级权限
-- **只读(read)**: 可查看项目和思维导图，不能编辑
-- **编辑(edit)**: 可以创建和编辑自己的节点，可在他人节点后添加子节点
-- **管理员(admin)**: 项目完全控制权，可管理成员和权限
-
-### 节点级权限
-- 用户只能编辑自己创建的节点
-- 不能删除有子节点的节点
-- 不能删除他人创建的节点
-- 可以在任何节点后添加子节点
-
-## API设计
-
-### 用户API
-- `POST /api/users/login/` - 用户登录
-- `POST /api/users/logout/` - 用户登出
-- `POST /api/users/` - 用户注册
-- `GET /api/users/me/` - 获取当前用户信息
-- `GET /api/users/dashboard/` - 获取用户仪表板数据
-
-### 项目API
-- `GET /api/projects/` - 获取项目列表
-- `POST /api/projects/` - 创建项目
-- `GET /api/projects/{id}/` - 获取项目详情
-- `PUT /api/projects/{id}/` - 更新项目
-- `DELETE /api/projects/{id}/` - 删除项目
-- `POST /api/projects/{id}/invite_member/` - 邀请成员
-- `DELETE /api/projects/{id}/remove_member/` - 移除成员
-
-### 思维导图API
-- `GET /api/projects/{id}/nodes/` - 获取节点列表
-- `POST /api/projects/{id}/nodes/` - 创建节点
-- `PUT /api/projects/{id}/nodes/{node_id}/` - 更新节点
-- `DELETE /api/projects/{id}/nodes/{node_id}/` - 删除节点
-- `GET /api/projects/{id}/nodes/tree/` - 获取树形结构
-- `GET /api/projects/{id}/nodes/simple-mind-map/` - 获取思维导图格式数据
-
-### WebSocket API
-- `ws://localhost:8000/ws/mindmap/{project_id}/` - 思维导图实时协作
-
-## 快速开始
-
-### 环境要求
-- Python 3.8+
-- Node.js 16+
-- Redis Server
-
-### 后端启动
-
+2. **启动后端**
 ```bash
 cd backend
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 python manage.py migrate
-python manage.py createsuperuser
 python manage.py runserver
 ```
 
-### 前端启动
-
+3. **启动前端**
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-### 访问地址
-- 前端应用: http://localhost:5173
-- 后端API: http://localhost:8000
-- 管理后台: http://localhost:8000/admin
+4. **访问应用**
+- 前端: http://localhost:5173
+- 后端 API: http://localhost:8000
 
-## 开发进度
+### 🐳 Docker 部署
 
-### 已完成 ✅
-- [x] 项目基础架构搭建
-- [x] 用户认证系统
-- [x] 项目管理功能
-- [x] 数据库模型设计
-- [x] REST API开发
-- [x] WebSocket实时通信框架
-- [x] 前端基础页面和组件
-- [x] 状态管理和路由配置
+```bash
+# 一键启动整个系统
+docker-compose up -d
 
-### 进行中 🚧
-- [ ] 思维导图编辑器集成
-- [ ] WebSocket实时协作功能
-- [ ] 成员管理界面
-- [ ] 权限控制完善
+# 查看运行状态
+docker-compose ps
 
-### 待开发 📋
-- [ ] 文件上传功能
-- [ ] 导出功能（PDF、图片等）
-- [ ] 操作历史回放
-- [ ] 移动端适配优化
-- [ ] 性能优化
-- [ ] 单元测试
-- [ ] 部署配置
+# 查看日志
+docker-compose logs -f
+```
 
-## 贡献指南
+## 📸 功能预览
 
-1. Fork 项目
-2. 创建功能分支 (`git checkout -b feature/amazing-feature`)
-3. 提交更改 (`git commit -m 'Add some amazing feature'`)
-4. 推送到分支 (`git push origin feature/amazing-feature`)
-5. 开启 Pull Request
+### 🏠 项目管理界面
+- 创建和管理思维导图项目
+- 邀请团队成员协作
+- 项目权限管理
 
-## 许可证
+### 🧠 思维导图编辑器
+- 全屏沉浸式编辑体验
+- 实时节点属性编辑
+- 多种布局和主题选择
+- 快捷键支持
 
-本项目采用 MIT 许可证。详见 [LICENSE](LICENSE) 文件。
+### 👥 实时协作
+- 多用户同时在线编辑
+- 实时同步节点变更
+- 在线用户状态显示
 
-## 联系方式
+## 🏗 项目架构
 
-如有问题或建议，请提交 Issue 或联系项目维护者。
+```
+collaborative-mindmap-system/
+├── backend/                 # Django 后端
+│   ├── collaboration_system/   # 项目配置
+│   ├── users/                  # 用户管理
+│   ├── projects/               # 项目管理
+│   ├── mindmaps/              # 思维导图功能
+│   └── requirements.txt       # Python 依赖
+├── frontend/                # Vue.js 前端
+│   ├── src/
+│   │   ├── components/         # 组件
+│   │   ├── views/             # 页面
+│   │   ├── stores/            # 状态管理
+│   │   └── api/               # API 接口
+│   └── package.json          # Node.js 依赖
+├── docker-compose.yml       # Docker 编排
+└── DEPLOYMENT.md           # 部署文档
+```
+
+## 🔧 技术栈
+
+### 后端技术
+- **[Django](https://djangoproject.com/)** - Web 框架
+- **[Django REST Framework](https://www.django-rest-framework.org/)** - API 开发
+- **[Django Channels](https://channels.readthedocs.io/)** - WebSocket 支持
+- **[Redis](https://redis.io/)** - 缓存和消息队列
+
+### 前端技术
+- **[Vue 3](https://vuejs.org/)** - 前端框架
+- **[TypeScript](https://www.typescriptlang.org/)** - 类型安全
+- **[Element Plus](https://element-plus.org/)** - UI 组件库
+- **[Pinia](https://pinia.vuejs.org/)** - 状态管理
+- **[Simple Mind Map](https://github.com/wanglin2/mind-map)** - 思维导图组件
+- **[Vite](https://vitejs.dev/)** - 构建工具
+
+## 📖 API 文档
+
+### 认证接口
+```http
+POST /api/auth/register/     # 用户注册
+POST /api/auth/login/        # 用户登录
+GET  /api/auth/me/          # 获取用户信息
+```
+
+### 项目管理
+```http
+GET    /api/projects/        # 获取项目列表
+POST   /api/projects/        # 创建项目
+GET    /api/projects/{id}/   # 获取项目详情
+PUT    /api/projects/{id}/   # 更新项目
+DELETE /api/projects/{id}/   # 删除项目
+```
+
+### 思维导图节点
+```http
+GET    /api/projects/{id}/nodes/  # 获取项目节点
+POST   /api/projects/{id}/nodes/  # 创建节点
+PUT    /api/nodes/{id}/          # 更新节点
+DELETE /api/nodes/{id}/          # 删除节点
+```
+
+详细的 API 文档请参考 [DEPLOYMENT.md](DEPLOYMENT.md)。
+
+## 🤝 贡献指南
+
+我们欢迎各种形式的贡献！
+
+1. **Fork** 项目
+2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 创建 **Pull Request**
+
+### 🐛 问题反馈
+
+如果您发现了 bug 或有功能建议，请：
+1. 查看 [已有 Issues](https://github.com/YOUR_USERNAME/collaborative-mindmap-system/issues)
+2. 创建新的 [Issue](https://github.com/YOUR_USERNAME/collaborative-mindmap-system/issues/new)
+
+## 📋 开发计划
+
+- [ ] **实时协作增强**
+  - [ ] 完整的 WebSocket 实时同步
+  - [ ] 多用户光标显示
+  - [ ] 冲突解决机制
+
+- [ ] **功能扩展**
+  - [ ] 思维导图模板库
+  - [ ] 更多导出格式 (PDF, SVG, XMind)
+  - [ ] 评论和标注系统
+  - [ ] 版本历史和回滚
+
+- [ ] **用户体验**
+  - [ ] 移动端优化
+  - [ ] 离线编辑支持
+  - [ ] 快捷键自定义
+  - [ ] 主题编辑器
+
+- [ ] **集成功能**
+  - [ ] 第三方登录 (Google, GitHub)
+  - [ ] 云存储集成
+  - [ ] API 开放平台
+
+## 📄 许可证
+
+本项目采用 [MIT 许可证](LICENSE) - 详见 LICENSE 文件。
+
+## 👥 贡献者
+
+感谢所有为这个项目做出贡献的开发者！
+
+<div align="center">
+<a href="https://github.com/YOUR_USERNAME/collaborative-mindmap-system/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=YOUR_USERNAME/collaborative-mindmap-system" />
+</a>
+</div>
+
+## 📞 联系我们
+
+- 项目地址: [GitHub](https://github.com/YOUR_USERNAME/collaborative-mindmap-system)
+- 问题反馈: [Issues](https://github.com/YOUR_USERNAME/collaborative-mindmap-system/issues)
+- 邮箱: your-email@example.com
+
+---
+
+<div align="center">
+
+**[⬆ 回到顶部](#-协作思维导图系统)**
+
+Made with ❤️ by [Your Name](https://github.com/YOUR_USERNAME)
+
+</div>

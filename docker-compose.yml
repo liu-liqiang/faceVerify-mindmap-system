@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 数据库
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: mindmap_db
+      POSTGRES_USER: mindmap_user
+      POSTGRES_PASSWORD: mindmap_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - mindmap_network
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - mindmap_network
+
+  # Django 后端
+  backend:
+    build: ./backend
+    environment:
+      - DEBUG=False
+      - SECRET_KEY=your-production-secret-key-change-this
+      - DATABASE_URL=postgresql://mindmap_user:mindmap_password@db:5432/mindmap_db
+      - REDIS_URL=redis://redis:6379/0
+      - ALLOWED_HOSTS=localhost,127.0.0.1,yourdomain.com
+      - CORS_ALLOWED_ORIGINS=http://localhost,http://127.0.0.1,https://yourdomain.com
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    networks:
+      - mindmap_network
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn --bind 0.0.0.0:8000 collaboration_system.wsgi:application"
+
+  # Vue.js 前端
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - mindmap_network
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:
+
+networks:
+  mindmap_network:
+    driver: bridge
