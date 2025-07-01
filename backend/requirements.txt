@@ -1,0 +1,7 @@
+Django==5.2.3
+djangorestframework==3.16.0
+django-cors-headers==4.7.0
+channels==4.2.2
+channels-redis==4.2.1
+django-filter==25.1
+redis==6.2.0
