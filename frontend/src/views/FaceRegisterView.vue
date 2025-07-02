@@ -84,12 +84,19 @@ const userId = ref(route.query.userId as string)
 const tempToken = ref(route.query.tempToken as string)
 
 onMounted(async () => {
+  console.log('FaceRegister页面加载，路由参数:', {
+    userId: route.query.userId,
+    tempToken: route.query.tempToken
+  })
+
   if (!userId.value || !tempToken.value) {
-    ElMessage.error('无效的访问链接')
+    console.error('缺少必要参数:', { userId: userId.value, tempToken: tempToken.value })
+    ElMessage.error('无效的访问链接，缺少userId或tempToken参数')
     router.push('/register')
     return
   }
 
+  console.log('开始加载人脸识别模型...')
   // 加载 face-api.js 模型
   await loadFaceApiModels()
 })
@@ -202,6 +209,7 @@ const captureImage = async () => {
       stopCamera()
       showVideo.value = false
       ElMessage.info('已完成3张照片拍摄，摄像头已关闭，可以提交人脸信息了')
+      submitFaceData();
     }
   } catch (error) {
     console.error('人脸特征提取失败:', error)
@@ -259,12 +267,20 @@ const submitFaceData = async () => {
   try {
     submitting.value = true
 
+    console.log('准备提交人脸数据:', {
+      userId: userId.value,
+      tempToken: tempToken.value,
+      faceDataCount: faceDataList.value.length,
+      faceDataSample: faceDataList.value[0]?.slice(0, 5) // 只显示前5个特征值作为样本
+    })
+
     // 提交所有人脸特征数据
-    await userAPI.registerFaceForUser(parseInt(userId.value), {
+    const response = await userAPI.registerFaceForUser(parseInt(userId.value), {
       face_encodings: faceDataList.value,  // 直接发送特征向量数组
       temp_token: tempToken.value
     })
 
+    console.log('人脸录入响应:', response.data)
     ElMessage.success('人脸信息录入成功！请等待管理员审核')
 
     // 停止摄像头
@@ -277,9 +293,20 @@ const submitFaceData = async () => {
 
   } catch (error: any) {
     console.error('人脸录入失败:', error)
+    console.error('错误详情:', {
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message
+    })
 
     if (error.response?.data?.error) {
-      ElMessage.error(error.response.data.error)
+      ElMessage.error(`人脸录入失败: ${error.response.data.error}`)
+    } else if (error.response?.status === 404) {
+      ElMessage.error('用户不存在或API接口错误')
+    } else if (error.response?.status === 403) {
+      ElMessage.error('权限不足，可能是临时token无效')
+    } else if (error.message) {
+      ElMessage.error(`人脸录入失败: ${error.message}`)
     } else {
       ElMessage.error('人脸录入失败，请重试')
     }

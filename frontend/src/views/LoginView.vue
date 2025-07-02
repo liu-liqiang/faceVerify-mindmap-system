@@ -61,22 +61,61 @@
         <div class="face-login-section">
           <div class="user-info">
             <el-tag size="large" type="success">{{ userInfo.real_name }} ({{ userInfo.police_number }})</el-tag>
-            <p style="margin: 10px 0; color: #666;">请进行人脸识别以完成登录</p>
+            <p v-if="!autoRecognizing" style="margin: 10px 0; color: #666;">请进行人脸识别以完成登录</p>
+            <p v-else style="margin: 10px 0; color: #409EFF;">
+              自动识别中... 剩余时间: {{ recognitionCountdown }}秒
+              <br>
+              <small>第 {{ recognitionAttempts + 1 }} 次尝试 (最多 {{ maxAttempts }} 次)</small>
+            </p>
           </div>
 
           <div class="camera-container">
             <video ref="videoRef" autoplay playsinline :style="{ display: showCamera ? 'block' : 'none' }"></video>
             <canvas ref="canvasRef" :style="{ display: showCamera ? 'none' : 'block' }"></canvas>
+            
+            <!-- 识别状态指示器 -->
+            <div v-if="autoRecognizing" class="recognition-indicator">
+              <el-progress 
+                type="circle" 
+                :percentage="Math.round((20 - recognitionCountdown) / 20 * 100)"
+                :color="recognitionCountdown > 5 ? '#409EFF' : '#F56C6C'"
+                :width="80">
+                <template #default="{ percentage }">
+                  <span class="countdown-text">{{ recognitionCountdown }}s</span>
+                </template>
+              </el-progress>
+            </div>
           </div>
 
           <div class="face-controls">
-            <el-button v-if="!cameraStarted" type="primary" @click="startCamera" :loading="cameraLoading">
-              启动摄像头
+            <el-button v-if="!cameraStarted" type="primary" @click="startCameraAndAutoRecognize" :loading="cameraLoading">
+              开始人脸识别
             </el-button>
+            
             <div v-else class="face-buttons">
-              <el-button type="success" @click="captureFace" :loading="verifying">
-                人脸识别登录
+              <el-button 
+                v-if="!autoRecognizing" 
+                type="success" 
+                @click="startAutoRecognition" 
+                :loading="verifying">
+                开始自动识别
               </el-button>
+              
+              <el-button 
+                v-if="autoRecognizing" 
+                type="warning" 
+                @click="stopAutoRecognition">
+                停止识别
+              </el-button>
+              
+              <el-button 
+                v-if="!autoRecognizing" 
+                type="info" 
+                @click="captureFace" 
+                :loading="verifying">
+                手动识别
+              </el-button>
+              
               <el-button @click="restartPasswordLogin">
                 重新输入密码
               </el-button>
@@ -112,6 +151,14 @@ const showCamera = ref(true)
 const loginStep = ref<'password' | 'face'>('password')
 const modelsLoaded = ref(false)
 
+// 自动识别相关状态
+const autoRecognizing = ref(false)
+const recognitionCountdown = ref(20)
+const recognitionAttempts = ref(0)
+const maxAttempts = 3
+let recognitionTimer: NodeJS.Timeout | null = null
+let countdownTimer: NodeJS.Timeout | null = null
+
 const userInfo = ref<any>({})
 const userFaceEncodings = ref<number[][]>([])
 let mediaStream: MediaStream | null = null
@@ -145,7 +192,20 @@ onMounted(async () => {
 
 onUnmounted(() => {
   stopCamera()
+  clearTimers()
 })
+
+// 清理定时器
+const clearTimers = () => {
+  if (recognitionTimer) {
+    clearInterval(recognitionTimer)
+    recognitionTimer = null
+  }
+  if (countdownTimer) {
+    clearInterval(countdownTimer)
+    countdownTimer = null
+  }
+}
 
 // 加载 face-api.js 模型
 const loadFaceApiModels = async () => {
@@ -153,17 +213,21 @@ const loadFaceApiModels = async () => {
     ElMessage.info('正在加载人脸识别模型...')
 
     // 逐个加载模型并提供进度反馈
-    console.log('开始加载 SSD MobileNet v1 模型...')
-    await faceapi.nets.ssdMobilenetv1.loadFromUri('/models')
-    console.log('SSD MobileNet v1 模型加载完成')
+    await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
+    await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
+    await faceapi.nets.ssdMobilenetv1.loadFromUri('/models');
+    // console.log('开始加载 SSD MobileNet v1 模型...')
+    // await faceapi.loadSsdMobilenetv1Model('/')
+    // console.log('SSD MobileNet v1 模型加载完成')
 
-    console.log('开始加载面部关键点模型...')
-    await faceapi.nets.faceLandmark68Net.loadFromUri('/models')
-    console.log('面部关键点模型加载完成')
+    // console.log('开始加载面部关键点模型...')
+    // await faceapi.loadFaceLandmarkModel('/')
 
-    console.log('开始加载人脸识别模型...')
-    await faceapi.nets.faceRecognitionNet.loadFromUri('/models')
-    console.log('人脸识别模型加载完成')
+    // console.log('面部关键点模型加载完成')
+
+    // console.log('开始加载人脸识别模型...')
+    // await faceapi.loadFaceRecognitionModel('/')
+    // console.log('人脸识别模型加载完成')
 
     modelsLoaded.value = true
     console.log('所有人脸识别模型加载成功')
@@ -199,7 +263,12 @@ const handlePasswordLogin = async () => {
 
         loginStep.value = 'face'
         userInfo.value = result.user
-        ElMessage.success('密码验证通过，请进行人脸识别')
+        ElMessage.success('密码验证通过，正在启动人脸识别...')
+        
+        // 自动启动摄像头和人脸识别
+        setTimeout(() => {
+          startCameraAndAutoRecognize()
+        }, 1000) // 1秒后自动启动
       } catch (error: any) {
         console.error('获取人脸特征失败:', error)
         ElMessage.error('获取人脸特征失败，请联系管理员')
@@ -257,6 +326,113 @@ const stopCamera = () => {
     mediaStream = null
   }
   cameraStarted.value = false
+  stopAutoRecognition()
+}
+
+// 启动摄像头并开始自动识别
+const startCameraAndAutoRecognize = async () => {
+  await startCamera()
+  if (cameraStarted.value) {
+    // 等待摄像头稳定后开始自动识别
+    setTimeout(() => {
+      startAutoRecognition()
+    }, 1000)
+  }
+}
+
+// 开始自动识别
+const startAutoRecognition = () => {
+  if (!cameraStarted.value || !modelsLoaded.value) {
+    ElMessage.error('请先启动摄像头并等待模型加载完成')
+    return
+  }
+
+  autoRecognizing.value = true
+  recognitionCountdown.value = 20
+  recognitionAttempts.value++
+
+  ElMessage.info(`开始第 ${recognitionAttempts.value} 次自动人脸识别，请保持面部正对摄像头`)
+
+  // 开始倒计时
+  countdownTimer = setInterval(() => {
+    recognitionCountdown.value--
+    if (recognitionCountdown.value <= 0) {
+      handleRecognitionTimeout()
+    }
+  }, 1000)
+
+  // 开始定期尝试识别
+  recognitionTimer = setInterval(async () => {
+    if (!autoRecognizing.value) return
+    
+    try {
+      await attemptFaceRecognition()
+    } catch (error) {
+      console.log('识别尝试失败，继续重试...', error)
+    }
+  }, 2000) // 每2秒尝试一次识别
+}
+
+// 停止自动识别
+const stopAutoRecognition = () => {
+  autoRecognizing.value = false
+  clearTimers()
+}
+
+// 处理识别超时
+const handleRecognitionTimeout = () => {
+  stopAutoRecognition()
+  
+  if (recognitionAttempts.value >= maxAttempts) {
+    ElMessage.error(`人脸识别失败，已尝试 ${maxAttempts} 次。请检查光线条件或联系管理员`)
+    // 可以选择回到密码登录或其他处理
+  } else {
+    ElMessage.warning(`第 ${recognitionAttempts.value} 次识别超时，准备重新尝试...`)
+    // 3秒后自动重试
+    setTimeout(() => {
+      if (loginStep.value === 'face' && cameraStarted.value) {
+        startAutoRecognition()
+      }
+    }, 3000)
+  }
+}
+
+// 尝试人脸识别（自动模式）
+const attemptFaceRecognition = async () => {
+  if (!videoRef.value) return
+
+  try {
+    const video = videoRef.value
+    
+    // 使用 face-api.js 提取人脸特征
+    const currentFeatures = await extractFaceFeatures(video)
+    
+    // 与用户存储的特征进行比对
+    const comparisonResult = compareFaceFeatures(currentFeatures, userFaceEncodings.value)
+    
+    console.log('自动识别结果:', comparisonResult)
+    
+    if (comparisonResult.success) {
+      // 识别成功，停止自动识别
+      stopAutoRecognition()
+      
+      // 提交验证结果
+      const result = await authStore.faceVerify({
+        success: comparisonResult.success,
+        confidence: comparisonResult.confidence,
+        reason: comparisonResult.reason
+      })
+      
+      ElMessage.success(`人脸识别成功！置信度: ${comparisonResult.confidence}%`)
+      stopCamera()
+      router.push('/')
+    }
+    // 如果识别失败，继续尝试直到超时
+    
+  } catch (error: any) {
+    // 这里不显示错误消息，因为是自动尝试，失败是正常的
+    console.log('自动识别尝试:', error.message)
+  }
 }
 
 // 计算两个特征向量之间的欧几里得距离
@@ -387,6 +563,7 @@ const restartPasswordLogin = () => {
   loginStep.value = 'password'
   stopCamera()
   authStore.loginStep = 'password'
+  recognitionAttempts.value = 0
 }
 
 // 处理登录错误
@@ -459,6 +636,7 @@ const handleLoginError = (error: any) => {
   border-radius: 8px;
   padding: 20px;
   background: #f9f9f9;
+  position: relative;
 }
 
 .camera-container video,
@@ -467,6 +645,22 @@ const handleLoginError = (error: any) => {
   max-height: 300px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.recognition-indicator {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  padding: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.countdown-text {
+  font-size: 14px;
+  font-weight: bold;
+  color: #409EFF;
 }
 
 .face-controls {

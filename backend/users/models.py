@@ -33,6 +33,7 @@ class CustomUser(AbstractUser):
         ('suspended', '已停用'),
     ]
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name="审核状态")
+    rejection_reason = models.TextField(blank=True, verbose_name="拒绝原因", help_text="审核拒绝时的原因说明")
     approved_by = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, verbose_name="审核人")
     approved_at = models.DateTimeField(null=True, blank=True, verbose_name="审核时间")
     
