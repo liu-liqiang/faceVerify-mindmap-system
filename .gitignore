@@ -110,8 +110,7 @@ cookies.txt
 secret_key.txt
 .secret
 
-# Face-API.js models (太大，用户需要手动下载)
-frontend/public/models/
+# Face-API.js models - now included in repository for easier deployment
 
 # Redis dump files
 dump.rdb
