@@ -7,3 +7,7 @@ django-filter==25.1
 redis==6.2.0
 gunicorn==21.2.0
 psycopg2-binary==2.9.9
+
+# 人脸识别相关依赖
+Pillow>=11.0.0
+numpy>=2.0.0

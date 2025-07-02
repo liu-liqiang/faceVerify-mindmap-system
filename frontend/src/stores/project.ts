@@ -32,21 +32,30 @@ export const useProjectStore = defineStore('project', () => {
   const currentProject = ref<Project | null>(null)
   const projectMembers = ref<ProjectMember[]>([])
   const loading = ref(false)
-  
+
   // 获取项目列表
   const fetchProjects = async () => {
     loading.value = true
     try {
       const response = await projectAPI.list()
-      projects.value = response.data
-      return response.data
+      // 确保返回的数据是数组，并且每个项目都有完整的creator信息
+      const projectsData = Array.isArray(response.data) ? response.data : []
+      projects.value = projectsData.map(project => ({
+        ...project,
+        creator: project.creator || { id: 0, username: '未知', email: '' },
+        member_count: project.member_count || 0,
+        node_count: project.node_count || 0
+      }))
+      return projects.value
     } catch (error) {
+      console.error('获取项目列表失败:', error)
+      projects.value = []
       throw error
     } finally {
       loading.value = false
     }
   }
-  
+
   // 创建项目
   const createProject = async (data: { name: string; description?: string }) => {
     try {
@@ -57,7 +66,7 @@ export const useProjectStore = defineStore('project', () => {
       throw error
     }
   }
-  
+
   // 获取项目详情
   const fetchProject = async (id: number) => {
     loading.value = true
@@ -71,25 +80,25 @@ export const useProjectStore = defineStore('project', () => {
       loading.value = false
     }
   }
-  
+
   // 更新项目
   const updateProject = async (id: number, data: Partial<{ name: string; description: string }>) => {
     try {
       const response = await projectAPI.update(id, data)
       currentProject.value = response.data
-      
+
       // 更新列表中的项目
       const index = projects.value.findIndex(p => p.id === id)
       if (index !== -1) {
         projects.value[index] = response.data
       }
-      
+
       return response.data
     } catch (error) {
       throw error
     }
   }
-  
+
   // 删除项目
   const deleteProject = async (id: number) => {
     try {
@@ -102,7 +111,7 @@ export const useProjectStore = defineStore('project', () => {
       throw error
     }
   }
-  
+
   // 获取项目成员
   const fetchProjectMembers = async (id: number) => {
     try {
@@ -113,7 +122,7 @@ export const useProjectStore = defineStore('project', () => {
       throw error
     }
   }
-  
+
   // 邀请成员
   const inviteMember = async (projectId: number, data: { username: string; permission: string }) => {
     try {
@@ -124,7 +133,7 @@ export const useProjectStore = defineStore('project', () => {
       throw error
     }
   }
-  
+
   // 移除成员
   const removeMember = async (projectId: number, username: string) => {
     try {
@@ -134,7 +143,7 @@ export const useProjectStore = defineStore('project', () => {
       throw error
     }
   }
-  
+
   // 更新成员权限
   const updateMemberPermission = async (projectId: number, username: string, permission: string) => {
     try {
@@ -145,7 +154,7 @@ export const useProjectStore = defineStore('project', () => {
       throw error
     }
   }
-  
+
   return {
     projects,
     currentProject,

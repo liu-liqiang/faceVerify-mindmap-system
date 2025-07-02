@@ -109,3 +109,13 @@ cookies.txt
 # Sensitive information
 secret_key.txt
 .secret
+
+# Face-API.js models (太大，用户需要手动下载)
+frontend/public/models/
+
+# Redis dump files
+dump.rdb
+*.rdb
+
+# PowerShell scripts
+*.ps1

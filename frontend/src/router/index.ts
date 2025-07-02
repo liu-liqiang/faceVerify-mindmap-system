@@ -6,6 +6,11 @@ const router = createRouter({
   routes: [
     {
       path: '/',
+      name: 'home',
+      redirect: '/dashboard'
+    },
+    {
+      path: '/dashboard',
       name: 'dashboard',
       component: () => import('../views/DashboardView.vue'),
       meta: { requiresAuth: true }
@@ -18,7 +23,7 @@ const router = createRouter({
     },
     {
       path: '/register',
-      name: 'register', 
+      name: 'register',
       component: () => import('../views/RegisterView.vue'),
       meta: { guest: true }
     },
@@ -56,6 +61,36 @@ const router = createRouter({
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('../views/NotFoundView.vue')
+    },
+    {
+      path: '/face-verify/:user',
+      name: 'face-verify',
+      component: () => import('../views/FaceVerifyView.vue'),
+      meta: { guest: true }
+    },
+    {
+      path: '/face-register',
+      name: 'FaceRegister',
+      component: () => import('../views/FaceRegisterView.vue'),
+      meta: { guest: true }
+    },
+    {
+      path: '/face-supplement',
+      name: 'FaceSupplement',
+      component: () => import('../views/FaceSupplementView.vue'),
+      meta: { guest: true }
+    },
+    {
+      path: '/user-management',
+      name: 'UserManagement',
+      component: () => import('../views/UserManagementView.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+      path: '/admin-login',
+      name: 'AdminLogin',
+      component: () => import('../views/AdminLoginView.vue'),
+      meta: { guest: true, title: '管理员登录' }
     }
   ]
 })
@@ -63,7 +98,7 @@ const router = createRouter({
 // 路由守卫
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
-  
+
   // 如果路由需要认证
   if (to.meta.requiresAuth) {
     if (!authStore.isAuthenticated) {
@@ -71,6 +106,13 @@ router.beforeEach(async (to, from, next) => {
       try {
         await authStore.initAuth()
         if (authStore.isAuthenticated) {
+          // 检查管理员权限
+          if (to.meta.requiresAdmin) {
+            if (!authStore.user?.is_superuser && !authStore.user?.is_staff) {
+              next('/dashboard')
+              return
+            }
+          }
           next()
         } else {
           next('/login')
@@ -79,12 +121,19 @@ router.beforeEach(async (to, from, next) => {
         next('/login')
       }
     } else {
+      // 检查管理员权限
+      if (to.meta.requiresAdmin) {
+        if (!authStore.user?.is_superuser && !authStore.user?.is_staff) {
+          next('/dashboard')
+          return
+        }
+      }
       next()
     }
   }
   // 如果是访客页面且已登录
   else if (to.meta.guest && authStore.isAuthenticated) {
-    next('/')
+    next('/dashboard')
   }
   // 其他情况直接通过
   else {

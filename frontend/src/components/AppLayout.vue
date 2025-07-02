@@ -5,29 +5,28 @@
       <el-header class="app-header">
         <div class="header-content">
           <div class="header-left">
-            <router-link to="/" class="logo">
+            <router-link to="/dashboard" class="logo">
               <h2>SMM协作系统</h2>
             </router-link>
           </div>
-          
+
           <div class="header-nav">
-            <el-menu
-              mode="horizontal"
-              :default-active="activeMenu"
-              class="header-menu"
-              @select="handleMenuSelect"
-            >
+            <el-menu mode="horizontal" :default-active="activeMenu" class="header-menu" @select="handleMenuSelect">
               <el-menu-item index="/dashboard">
-                <el-icon><House /></el-icon>
+                <el-icon>
+                  <House />
+                </el-icon>
                 <span>仪表板</span>
               </el-menu-item>
               <el-menu-item index="/projects">
-                <el-icon><Folder /></el-icon>
+                <el-icon>
+                  <Folder />
+                </el-icon>
                 <span>项目管理</span>
               </el-menu-item>
             </el-menu>
           </div>
-          
+
           <div class="header-right">
             <el-dropdown @command="handleCommand">
               <span class="user-dropdown">
@@ -35,16 +34,22 @@
                   {{ authStore.user?.username?.charAt(0).toUpperCase() }}
                 </el-avatar>
                 <span class="username">{{ authStore.user?.username }}</span>
-                <el-icon><ArrowDown /></el-icon>
+                <el-icon>
+                  <ArrowDown />
+                </el-icon>
               </span>
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item command="profile">
-                    <el-icon><User /></el-icon>
+                    <el-icon>
+                      <User />
+                    </el-icon>
                     个人资料
                   </el-dropdown-item>
                   <el-dropdown-item divided command="logout">
-                    <el-icon><SwitchButton /></el-icon>
+                    <el-icon>
+                      <SwitchButton />
+                    </el-icon>
                     退出登录
                   </el-dropdown-item>
                 </el-dropdown-menu>
@@ -53,7 +58,7 @@
           </div>
         </div>
       </el-header>
-      
+
       <!-- 主内容区域 -->
       <el-main class="app-main">
         <div class="main-content">
@@ -115,7 +120,7 @@ const handleCommand = async (command: string) => {
             type: 'warning'
           }
         )
-        
+
         await authStore.logout()
         ElMessage.success('退出成功')
         router.push('/login')
@@ -130,7 +135,8 @@ const handleCommand = async (command: string) => {
 <style scoped>
 .app-layout {
   min-height: 100vh;
-  height: 100vh; /* 强制设置高度 */
+  height: 100vh;
+  /* 强制设置高度 */
   background-color: #f5f7fa;
   display: flex;
   flex-direction: column;
@@ -225,7 +231,8 @@ const handleCommand = async (command: string) => {
 .app-main {
   padding: 0;
   background-color: #f5f7fa;
-  flex: 1; /* 确保主内容区域占据剩余空间 */
+  flex: 1;
+  /* 确保主内容区域占据剩余空间 */
   display: flex;
   flex-direction: column;
 }
@@ -261,15 +268,15 @@ const handleCommand = async (command: string) => {
   .header-content {
     padding: 0 15px;
   }
-  
+
   .header-nav {
     display: none;
   }
-  
+
   .logo h2 {
     font-size: 18px;
   }
-  
+
   .main-content {
     padding: 15px;
   }

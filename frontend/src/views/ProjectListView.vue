@@ -5,34 +5,36 @@
         <div class="page-header">
           <h1>项目管理</h1>
           <el-button type="primary" @click="showCreateDialog = true">
-            <el-icon><Plus /></el-icon>
+            <el-icon>
+              <Plus />
+            </el-icon>
             创建项目
           </el-button>
         </div>
       </template>
-      
+
       <div class="projects-content">
         <div v-if="projectStore.loading" class="loading-container">
           <el-skeleton :rows="5" animated />
         </div>
-        
+
         <div v-else-if="projectStore.projects.length" class="projects-grid">
-          <el-card
-            v-for="project in projectStore.projects"
-            :key="project.id"
-            class="project-card"
-            @click="$router.push(`/projects/${project.id}`)"
-          >
+          <el-card v-for="project in projectStore.projects" :key="project.id" class="project-card"
+            @click="$router.push(`/projects/${project.id}`)">
             <div class="project-header">
               <h3>{{ project.name }}</h3>
-              <el-dropdown @command="(command) => handleProjectAction(command, project)">
+              <el-dropdown @command="(command: string) => handleProjectAction(command, project)">
                 <el-button text @click.stop>
-                  <el-icon><MoreFilled /></el-icon>
+                  <el-icon>
+                    <MoreFilled />
+                  </el-icon>
                 </el-button>
                 <template #dropdown>
                   <el-dropdown-menu>
                     <el-dropdown-item command="mindmap">
-                      <el-icon><Share /></el-icon>
+                      <el-icon>
+                        <Share />
+                      </el-icon>
                       思维导图
                     </el-dropdown-item>
                     <el-dropdown-item command="edit">编辑</el-dropdown-item>
@@ -42,31 +44,33 @@
                 </template>
               </el-dropdown>
             </div>
-            
+
             <p class="project-description">{{ project.description || '暂无描述' }}</p>
-            
+
             <div class="project-stats">
               <div class="stat">
-                <el-icon><User /></el-icon>
-                <span>{{ project.member_count }} 成员</span>
+                <el-icon>
+                  <User />
+                </el-icon>
+                <span>{{ project.member_count || 0 }} 成员</span>
               </div>
               <div class="stat">
-                <el-icon><Connection /></el-icon>
-                <span>{{ project.node_count }} 节点</span>
+                <el-icon>
+                  <Connection />
+                </el-icon>
+                <span>{{ project.node_count || 0 }} 节点</span>
               </div>
             </div>
-            
+
             <div class="project-footer">
               <div class="project-creator">
-                创建者: {{ project.creator.username }}
+                创建者: {{ project.creator?.username || '未知' }}
               </div>
               <div class="project-actions">
-                <el-button 
-                  size="small" 
-                  type="primary" 
-                  @click.stop="$router.push(`/projects/${project.id}/mindmap`)"
-                >
-                  <el-icon><Share /></el-icon>
+                <el-button size="small" type="primary" @click.stop="$router.push(`/projects/${project.id}/mindmap`)">
+                  <el-icon>
+                    <Share />
+                  </el-icon>
                   思维导图
                 </el-button>
               </div>
@@ -76,7 +80,7 @@
             </div>
           </el-card>
         </div>
-        
+
         <el-empty v-else description="还没有项目">
           <el-button type="primary" @click="showCreateDialog = true">
             创建第一个项目
@@ -84,12 +88,9 @@
         </el-empty>
       </div>
     </AppLayout>
-    
+
     <!-- 创建项目对话框 -->
-    <CreateProjectDialog
-      v-model="showCreateDialog"
-      @created="handleProjectCreated"
-    />
+    <CreateProjectDialog v-model="showCreateDialog" @created="handleProjectCreated" />
   </div>
 </template>
 
@@ -134,7 +135,7 @@ const handleProjectAction = async (command: string, project: Project) => {
             type: 'warning'
           }
         )
-        
+
         await projectStore.deleteProject(project.id)
         ElMessage.success('项目删除成功')
       } catch (error) {
