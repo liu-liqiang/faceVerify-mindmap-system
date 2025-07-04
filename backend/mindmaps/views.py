@@ -46,27 +46,28 @@ class MindMapNodeViewSet(viewsets.ModelViewSet):
         project_id = self.kwargs.get('project_pk')
         project = get_object_or_404(Project, id=project_id)
         
-        # 检查编辑权限
+        # 检查项目成员权限：有编辑权限及以上的用户可以添加节点
         try:
             member = ProjectMember.objects.get(project=project, user=self.request.user)
             if member.permission not in ['edit', 'admin']:
-                raise PermissionError("没有编辑权限")
+                raise PermissionError("没有编辑权限，无法添加节点")
         except ProjectMember.DoesNotExist:
             raise PermissionError("你不是项目成员")
         
-        # 不需要在这里传递 project 和 creator，因为序列化器会从 context 中获取
+        # 保存节点，序列化器会自动设置project和creator
         serializer.save()
     
     def perform_update(self, serializer):
-        # 检查是否只能编辑自己创建的节点
-        if serializer.instance.creator != self.request.user:
+        # 检查是否可以编辑此节点：只能编辑自己创建的节点
+        if not serializer.instance.can_be_edited_by(self.request.user):
             raise PermissionError("只能编辑自己创建的节点")
+        
         serializer.save()
     
     def perform_destroy(self, instance):
-        # 检查删除权限
+        # 检查删除权限：只能删除自己创建的且没有子节点的节点
         if not instance.can_be_deleted_by(self.request.user):
-            raise PermissionError("没有删除权限或节点存在子节点")
+            raise PermissionError("只能删除自己创建的且没有子节点的节点")
         
         # 记录删除日志
         NodeEditLog.objects.create(
@@ -74,10 +75,11 @@ class MindMapNodeViewSet(viewsets.ModelViewSet):
             user=self.request.user,
             action='delete',
             old_data={
-                'text': instance.text,
+                'content': instance.content,
                 'parent_id': instance.parent.node_id if instance.parent else None
             }
         )
+        instance.delete()
         instance.delete()
     
     @action(detail=False, methods=['get'])
@@ -94,10 +96,10 @@ class MindMapNodeViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        # 获取根节点（没有父节点的节点）
+        # 获取根节点
         root_nodes = MindMapNode.objects.filter(
             project=project, 
-            parent=None
+            is_root=True
         ).order_by('created_at')
         
         serializer = MindMapTreeSerializer(
@@ -124,7 +126,7 @@ class MindMapNodeViewSet(viewsets.ModelViewSet):
         # 获取根节点
         root_nodes = MindMapNode.objects.filter(
             project=project, 
-            parent=None
+            is_root=True
         ).order_by('created_at')
         
         if root_nodes.exists():
@@ -134,19 +136,21 @@ class MindMapNodeViewSet(viewsets.ModelViewSet):
                     'data': {
                         'text': project.name,
                         'uid': 'root',
-                        'isRoot': True
+                        'isRoot': True,
+                        'expand': True
                     },
-                    'children': [node.to_simple_mind_map_format() for node in root_nodes]
+                    'children': [node.to_simple_mind_map_format(request.user) for node in root_nodes]
                 }
             else:
-                mind_map_data = root_nodes.first().to_simple_mind_map_format()
+                mind_map_data = root_nodes.first().to_simple_mind_map_format(request.user)
         else:
-            # 如果没有节点，创建根节点
+            # 如果没有节点，创建默认根节点
             mind_map_data = {
                 'data': {
                     'text': project.name,
                     'uid': 'root',
-                    'isRoot': True
+                    'isRoot': True,
+                    'expand': True
                 },
                 'children': []
             }

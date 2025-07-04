@@ -11,3 +11,6 @@ psycopg2-binary==2.9.9
 # 人脸识别相关依赖
 Pillow>=11.0.0
 numpy>=2.0.0
+
+# JWT认证相关依赖
+PyJWT>=2.8.0

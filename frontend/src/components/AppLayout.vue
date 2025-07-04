@@ -235,11 +235,14 @@ const handleCommand = async (command: string) => {
   /* 确保主内容区域占据剩余空间 */
   display: flex;
   flex-direction: column;
+  height: calc(100vh - 60px);
+  /* 减去header高度 */
+  overflow: hidden;
 }
 
 /* 覆盖 Element Plus 的容器样式 */
 :deep(.el-container) {
-  height: 100%;
+  height: 100vh;
   display: flex;
   flex-direction: column;
 }
@@ -247,20 +250,28 @@ const handleCommand = async (command: string) => {
 :deep(.el-main) {
   flex: 1;
   overflow: hidden;
+  padding: 0;
 }
 
 .main-content {
   width: 100%;
   margin: 0;
   padding: 20px;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .content-header {
   margin-bottom: 20px;
+  flex-shrink: 0;
 }
 
 .content-body {
   background: transparent;
+  flex: 1;
+  overflow: hidden;
 }
 
 /* 响应式设计 */

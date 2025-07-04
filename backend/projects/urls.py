@@ -6,5 +6,5 @@ router = DefaultRouter()
 router.register(r'projects', ProjectViewSet, basename='project')
 
 urlpatterns = [
-    path('api/', include(router.urls)),
+    path('', include(router.urls)),
 ]

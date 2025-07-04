@@ -145,17 +145,28 @@ export const userAPI = {
     api.get('/users/admin_users/', { params }),
   updateUserStatus: (userId: number, data: { status: string; rejection_reason?: string }) =>
     api.post(`/users/${userId}/approve_user/`, data),
+  // 根据单位获取用户列表
+  getUsersByDepartment: (department: string) =>
+    api.get(`/users/users_by_department/?department=${department}`),
 }
 
 // 项目相关API
 export const projectAPI = {
   list: () =>
     api.get('/projects/'),
-  create: (data: { name: string; description?: string }) =>
-    api.post('/projects/', data),
+  create: (data: FormData | { name: string; case_number: string; filing_unit: string; case_summary: string }) => {
+    if (data instanceof FormData) {
+      return api.post('/projects/', data, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        }
+      })
+    }
+    return api.post('/projects/', data)
+  },
   get: (id: number) =>
     api.get(`/projects/${id}/`),
-  update: (id: number, data: Partial<{ name: string; description: string }>) =>
+  update: (id: number, data: Partial<{ name: string; case_number: string; filing_unit: string; case_summary: string }>) =>
     api.put(`/projects/${id}/`, data),
   delete: (id: number) =>
     api.delete(`/projects/${id}/`),
@@ -167,6 +178,64 @@ export const projectAPI = {
     api.delete(`/projects/${id}/remove_member/`, { data }),
   updateMemberPermission: (id: number, data: { username: string; permission: string }) =>
     api.put(`/projects/${id}/update_member_permission/`, data),
+  uploadAttachment: (id: number, file: any, description?: string) => {
+    const formData = new FormData()
+
+    // 确保文件是有效的
+    if (!(file instanceof File) && typeof file === 'object') {
+      // 如果不是File实例但是有类似文件的属性，尝试创建一个Blob
+      if (file && 'type' in file && 'name' in file && 'size' in file) {
+        const fileType = file.type as string;
+        const fileName = file.name as string;
+
+        // 如果有arrayBuffer或blob属性，使用它来创建Blob
+        if ('arrayBuffer' in file) {
+          const blob = new Blob([file as BlobPart], { type: fileType });
+          formData.append('file', blob, fileName);
+        } else {
+          // 否则直接尝试作为文件附加
+          formData.append('file', file as Blob, fileName);
+        }
+      } else {
+        console.error('提供的文件对象无效:', file);
+        return Promise.reject(new Error('无效的文件对象'));
+      }
+    } else {
+      // 正常的File对象
+      formData.append('file', file as File);
+    }
+
+    // 添加描述（如果有）
+    if (description) {
+      formData.append('description', description);
+    }
+
+    // 安全地记录文件信息
+    const fileName = file.name ? file.name : '未知文件';
+    const fileSize = file.size ? file.size : '未知大小';
+    const fileType = file.type ? file.type : '未知类型';
+
+    console.log(`准备上传文件到项目(${id})，文件名: ${fileName}, 大小: ${fileSize}, 类型: ${fileType}`);
+
+    return api.post(`/projects/${id}/upload_attachment/`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      // 添加上传进度回调
+      onUploadProgress: (progressEvent: any) => {
+        const percentCompleted = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1));
+        console.log(`文件上传进度: ${percentCompleted}%`);
+      }
+    });
+  },
+  getAttachments: (id: number) =>
+    api.get(`/projects/${id}/attachments/`),
+  downloadAttachment: (projectId: number, attachmentId: number) =>
+    api.get(`/projects/${projectId}/attachments/${attachmentId}/download/`, {
+      responseType: 'blob'
+    }),
+  deleteAttachment: (projectId: number, attachmentId: number) =>
+    api.delete(`/projects/${projectId}/attachments/${attachmentId}/`),
 }
 
 // 思维导图相关API

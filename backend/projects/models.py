@@ -142,3 +142,22 @@ class CaseAttachment(models.Model):
             if os.path.isfile(self.file.path):
                 os.remove(self.file.path)
         super().delete(*args, **kwargs)
+
+
+# 信号处理器，用于在项目创建后自动生成默认思维导图
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+@receiver(post_save, sender=Project)
+def create_default_mindmap(sender, instance, created, **kwargs):
+    """项目创建后自动生成默认思维导图"""
+    if created:
+        # 延迟导入避免循环导入
+        from mindmaps.models import MindMapNode
+        try:
+            MindMapNode.create_default_mindmap(instance)
+        except Exception as e:
+            # 记录错误但不阻止项目创建
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to create default mindmap for project {instance.id}: {str(e)}")

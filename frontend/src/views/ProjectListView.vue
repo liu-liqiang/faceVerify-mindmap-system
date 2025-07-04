@@ -23,6 +23,10 @@
             @click="$router.push(`/projects/${project.id}`)">
             <div class="project-header">
               <h3>{{ project.name }}</h3>
+              <div class="project-meta">
+                <el-tag size="small" type="info">{{ project.case_number }}</el-tag>
+                <el-tag size="small">{{ project.filing_unit_display }}</el-tag>
+              </div>
               <el-dropdown @command="(command: string) => handleProjectAction(command, project)">
                 <el-button text @click.stop>
                   <el-icon>
@@ -45,7 +49,7 @@
               </el-dropdown>
             </div>
 
-            <p class="project-description">{{ project.description || '暂无描述' }}</p>
+            <p class="project-description">{{ project.case_summary || '暂无案情描述' }}</p>
 
             <div class="project-stats">
               <div class="stat">
@@ -91,6 +95,12 @@
 
     <!-- 创建项目对话框 -->
     <CreateProjectDialog v-model="showCreateDialog" @created="handleProjectCreated" />
+
+    <!-- 编辑项目对话框 -->
+    <EditProjectDialog v-model="showEditDialog" :project="selectedProject" @updated="handleProjectUpdated" />
+
+    <!-- 成员管理对话框 -->
+    <ProjectMembersDialog v-model="showMembersDialog" :project-id="selectedProject?.id || null" />
   </div>
 </template>
 
@@ -101,10 +111,15 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, MoreFilled, User, Connection, Share } from '@element-plus/icons-vue'
 import AppLayout from '@/components/AppLayout.vue'
 import CreateProjectDialog from '@/components/CreateProjectDialog.vue'
+import EditProjectDialog from '@/components/EditProjectDialog.vue'
+import ProjectMembersDialog from '@/components/ProjectMembersDialog.vue'
 import type { Project } from '@/stores/project'
 
 const projectStore = useProjectStore()
 const showCreateDialog = ref(false)
+const showEditDialog = ref(false)
+const showMembersDialog = ref(false)
+const selectedProject = ref<Project | null>(null)
 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('zh-CN')
@@ -117,17 +132,17 @@ const handleProjectAction = async (command: string, project: Project) => {
       window.open(`/projects/${project.id}/mindmap`, '_blank')
       break
     case 'edit':
-      // TODO: 实现编辑功能
-      ElMessage.info('编辑功能开发中')
+      selectedProject.value = project
+      showEditDialog.value = true
       break
     case 'members':
-      // TODO: 跳转到成员管理页面
-      ElMessage.info('成员管理功能开发中')
+      selectedProject.value = project
+      showMembersDialog.value = true
       break
     case 'delete':
       try {
         await ElMessageBox.confirm(
-          `确定要删除项目 "${project.name}" 吗？此操作不可恢复。`,
+          `确定要删除案件 "${project.name}" 吗？此操作不可恢复。`,
           '确认删除',
           {
             confirmButtonText: '确定',
@@ -137,7 +152,7 @@ const handleProjectAction = async (command: string, project: Project) => {
         )
 
         await projectStore.deleteProject(project.id)
-        ElMessage.success('项目删除成功')
+        ElMessage.success('案件删除成功')
       } catch (error) {
         // 用户取消操作
       }
@@ -147,6 +162,12 @@ const handleProjectAction = async (command: string, project: Project) => {
 
 const handleProjectCreated = () => {
   showCreateDialog.value = false
+  projectStore.fetchProjects()
+}
+
+const handleProjectUpdated = () => {
+  showEditDialog.value = false
+  selectedProject.value = null
   projectStore.fetchProjects()
 }
 
@@ -221,6 +242,7 @@ onMounted(() => {
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 

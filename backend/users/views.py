@@ -511,6 +511,22 @@ class UserViewSet(viewsets.ModelViewSet):
             face_confidence=face_confidence
         )
 
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def users_by_department(self, request):
+        """根据单位获取已审核用户列表"""
+        department = request.query_params.get('department')
+        
+        if not department:
+            return Response({'error': '请提供单位参数'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # 获取指定单位的已审核用户
+        users = CustomUser.objects.filter(
+            department=department,
+            status='approved'
+        ).order_by('real_name', 'username')
+        
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data)
 # ===========================================
 # CSRF豁免的独立API视图 (用于前端无token调用)
 # ===========================================
