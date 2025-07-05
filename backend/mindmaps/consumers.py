@@ -224,24 +224,25 @@ class MindMapConsumer(AsyncWebsocketConsumer):
     def create_node(self, node_data, parent_id):
         """创建节点"""
         project = Project.objects.get(id=self.project_id)
-        parent = None
+        parent_node_uid = None
         if parent_id:
-            parent = MindMapNode.objects.get(node_id=parent_id, project=project)
+            # 验证父节点存在
+            parent_node = MindMapNode.objects.get(node_id=parent_id, project=project)
+            parent_node_uid = parent_id
         
         node = MindMapNode.objects.create(
             project=project,
             node_id=node_data.get('uid'),
-            parent=parent,
+            parent_node_uid=parent_node_uid,
             creator=self.user,
             text=node_data.get('text', ''),
-            image=node_data.get('image', ''),
+            rich_text=node_data.get('rich_text', False),
+            expand=node_data.get('expand', True),
+            icon=node_data.get('icon', []),
             hyperlink=node_data.get('hyperlink', ''),
+            hyperlink_title=node_data.get('hyperlink_title', ''),
             note=node_data.get('note', ''),
-            background_color=node_data.get('backgroundColor', '#ffffff'),
-            font_color=node_data.get('color', '#000000'),
-            font_size=node_data.get('fontSize', 14),
-            font_weight=node_data.get('fontWeight', 'normal'),
-            extra_data=node_data.get('extra_data', {})
+            tags=node_data.get('tags', [])
         )
         
         # 记录日志
@@ -268,13 +269,13 @@ class MindMapConsumer(AsyncWebsocketConsumer):
             # 保存旧数据
             old_data = {
                 'text': node.text,
-                'image': node.image,
+                'rich_text': node.rich_text,
+                'expand': node.expand,
+                'icon': node.icon,
                 'hyperlink': node.hyperlink,
+                'hyperlink_title': node.hyperlink_title,
                 'note': node.note,
-                'backgroundColor': node.background_color,
-                'color': node.font_color,
-                'fontSize': node.font_size,
-                'fontWeight': node.font_weight
+                'tags': node.tags
             }
             
             # 更新字段
@@ -315,7 +316,7 @@ class MindMapConsumer(AsyncWebsocketConsumer):
                 action='delete',
                 old_data={
                     'text': node.text,
-                    'parent_id': node.parent.node_id if node.parent else None
+                    'parent_id': node.parent_node_uid if node.parent_node_uid else None
                 }
             )
             
@@ -330,14 +331,14 @@ class MindMapConsumer(AsyncWebsocketConsumer):
         return {
             'id': node.node_id,
             'text': node.text,
-            'image': node.image,
+            'rich_text': node.rich_text,
+            'expand': node.expand,
+            'icon': node.icon,
             'hyperlink': node.hyperlink,
+            'hyperlink_title': node.hyperlink_title,
             'note': node.note,
-            'backgroundColor': node.background_color,
-            'color': node.font_color,
-            'fontSize': node.font_size,
-            'fontWeight': node.font_weight,
+            'tags': node.tags,
             'creator': node.creator.username,
             'created_at': node.created_at.isoformat(),
-            'parent_id': node.parent.node_id if node.parent else None
+            'parent_id': node.parent_node_uid if node.parent_node_uid else None
         }

@@ -40,6 +40,7 @@ def get_csrf_token(request):
         'success': True
     })
 
+@method_decorator(csrf_exempt, name='dispatch')
 class UserViewSet(viewsets.ModelViewSet):
     """
     用户管理的ViewSet
@@ -527,6 +528,32 @@ class UserViewSet(viewsets.ModelViewSet):
         
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'], url_path='by-police-number/(?P<police_number>[^/.]+)')
+    def get_by_police_number(self, request, police_number=None):
+        """通过警号获取用户信息"""
+        try:
+            user = CustomUser.objects.get(police_number=police_number)
+            # 只返回必要的公开信息
+            return Response({
+                'police_number': user.police_number,
+                'real_name': user.real_name,
+                'unit': user.get_department_display(),
+            })
+        except CustomUser.DoesNotExist:
+            return Response({
+                'error': '用户不存在',
+                'police_number': police_number,
+                'real_name': police_number,  # 如果用户不存在，使用警号作为姓名
+                'unit': '未知单位'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({
+                'error': f'获取用户信息失败: {str(e)}',
+                'police_number': police_number,
+                'real_name': police_number,
+                'unit': '未知单位'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 # ===========================================
 # CSRF豁免的独立API视图 (用于前端无token调用)
 # ===========================================

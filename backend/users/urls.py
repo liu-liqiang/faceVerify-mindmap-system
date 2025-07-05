@@ -12,5 +12,6 @@ urlpatterns = [
     path('users/verify-identity-supplement/', verify_identity_api, name='verify_identity_api'),
     path('users/supplement-face/', supplement_face_api, name='supplement_face_api'),
     path('users/admin-login/', admin_login_api, name='admin_login_api'),
+    path('users/by-police-number/<str:police_number>/', UserViewSet.as_view({'get': 'get_by_police_number'}), name='get_user_by_police_number'),
     path('', include(router.urls)),
 ]

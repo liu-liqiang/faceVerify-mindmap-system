@@ -40,6 +40,7 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      // 思维导图在projects之下
       path: '/projects/:id/mindmap',
       name: 'mindmap',
       component: () => import('../views/MindMapView.vue'),

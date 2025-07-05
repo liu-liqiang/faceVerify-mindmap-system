@@ -148,6 +148,11 @@ export const userAPI = {
   // 根据单位获取用户列表
   getUsersByDepartment: (department: string) =>
     api.get(`/users/users_by_department/?department=${department}`),
+  // 根据警号获取用户信息
+  getUserByPoliceNumber: async (policeNumber: string) => {
+    await initializeCSRF()
+    return api.get(`/users/by-police-number/${policeNumber}/`)
+  },
 }
 
 // 项目相关API
@@ -240,6 +245,7 @@ export const projectAPI = {
 
 // 思维导图相关API
 export const mindmapAPI = {
+  // 原有的基于项目的API路径
   getNodes: (projectId: number) =>
     api.get(`/projects/${projectId}/nodes/`),
   createNode: (projectId: number, data: any) =>
@@ -256,6 +262,174 @@ export const mindmapAPI = {
     api.get(`/projects/${projectId}/nodes/logs/`),
   getUserStats: (projectId: number) =>
     api.get(`/projects/${projectId}/nodes/stats/`),
+
+  // 新增的直接操作API（匹配前端需求）
+  // 创建节点 - 支持文件上传
+  createNodeWithProjectId: async (data: {
+    projectId: number;
+    data: any;
+    parent_uid?: string;
+    image?: File;
+    attachment?: File;
+  }) => {
+    // 确保CSRF token已初始化
+    await initializeCSRF()
+
+    // 创建 FormData 对象用于文件上传
+    const formData = new FormData()
+    formData.append('projectId', data.projectId.toString())
+    formData.append('data', JSON.stringify(data.data))
+
+    if (data.parent_uid) {
+      formData.append('parent_uid', data.parent_uid)
+    }
+
+    // 添加图片文件（如果有）
+    if (data.image && data.image instanceof File) {
+      formData.append('image', data.image)
+    }
+
+    // 添加附件文件（如果有）
+    if (data.attachment && data.attachment instanceof File) {
+      formData.append('attachment', data.attachment)
+    }
+
+    // 获取CSRF token
+    const csrfToken = getCSRFToken()
+
+    return axios.post('http://localhost:8000/api/mindmaps/nodes/create/', formData, {
+      withCredentials: true,
+      headers: {
+        'X-CSRFToken': csrfToken || '',
+        // 注意：不要设置 Content-Type，让浏览器自动设置 multipart/form-data
+      }
+    })
+  },
+
+  // 更新节点
+  updateNodeByUid: async (data: {
+    node_uid: string;
+    projectId: number;
+    data: any;
+  }) => {
+    await initializeCSRF()
+    const csrfToken = getCSRFToken()
+
+    return axios.put('http://localhost:8000/api/mindmaps/nodes/update/', data, {
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken || '',
+      }
+    })
+  },
+
+  // 删除节点
+  deleteNodeByUid: async (nodeUid: string, projectId: number) => {
+    await initializeCSRF()
+    const csrfToken = getCSRFToken()
+
+    return axios.delete(`http://localhost:8000/api/mindmaps/nodes/${nodeUid}/`, {
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken || '',
+      },
+      data: {
+        projectId: projectId
+      }
+    })
+  },
+
+  // 移动节点
+  moveNode: async (data: {
+    node_uid: string;
+    new_parent_uid?: string;
+    old_parent_uid?: string;
+    projectId: number;
+  }) => {
+    await initializeCSRF()
+    const csrfToken = getCSRFToken()
+
+    return axios.put('http://localhost:8000/api/mindmaps/nodes/move/', data, {
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken || '',
+      }
+    })
+  },
+
+  // 批量更新节点
+  batchUpdate: async (data: {
+    projectId: number;
+    changes: Array<{
+      action: string;
+      node_uid?: string;
+      node_data?: any;
+    }>;
+  }) => {
+    await initializeCSRF()
+    const csrfToken = getCSRFToken()
+
+    return axios.post('http://localhost:8000/api/mindmaps/batch-update/', data, {
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken || '',
+      }
+    })
+  },
+
+  // 批量更新节点（优化版本）
+  batchUpdateOptimized: async (data: {
+    projectId: number;
+    changes: Array<{
+      action: string;
+      node_uid?: string;
+      node_data?: any;
+      parent_uid?: string;
+    }>;
+  }) => {
+    await initializeCSRF()
+    const csrfToken = getCSRFToken()
+
+    return axios.post('http://localhost:8000/api/mindmaps/batch-update-optimized/', data, {
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken || '',
+      }
+    })
+  },
+
+  // 创建默认结构
+  createDefaultStructure: async (projectId: number) => {
+    await initializeCSRF()
+    const csrfToken = getCSRFToken()
+
+    return axios.post('http://localhost:8000/api/mindmaps/create-default-structure/', {
+      projectId: projectId
+    }, {
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken || '',
+      }
+    })
+  },
+
+  // 获取 Simple Mind Map 格式数据（新路径）
+  getSimpleMindMapFormatNew: async (projectId: number) => {
+    await initializeCSRF()
+
+    return axios.get(`http://localhost:8000/api/projects/${projectId}/nodes/simple-mind-map-format/`, {
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    })
+  },
 }
 
 // 导出初始化函数供外部调用
